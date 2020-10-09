@@ -1,4 +1,3 @@
-Arctic Oscillation (AO)
 Date,Value
 195001,-0.060
 195002,0.627
