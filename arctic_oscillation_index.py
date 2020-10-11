@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from xarray import apply_ufunc
 from scipy.stats import linregress
+import time
 
 #https://www.ncdc.noaa.gov/teleconnections/ao/
 #https://cds.climate.copernicus.eu/
@@ -33,13 +34,23 @@ u10=era.u10[:,0,:,:]
 plt.figure()
 plt.imshow(era.u10[0,0,:,:], aspect='auto')
 
-i=0
 
 def linreg(A):
-    print(i,'/',501)
-    results=linregress(A,ao_idx.Value)
+    A_arr=np.array(A)
+    ao_arr=np.array(ao_idx.Value)
+    mask=[(~np.isnan(A_arr)) & (~np.isnan(ao_arr))]
+    results=linregress(A_arr[mask],ao_arr[mask])
     corrcoeff=results.rvalue
-    i+=1
     return corrcoeff
 
+
+start_time = time.time()
+start_local_time = time.ctime(start_time)
+    
 CCs=np.apply_along_axis(linreg, 0, u10)
+
+end_time = time.time()
+end_local_time = time.ctime(end_time)
+print("--- Processing time: %.2f minutes ---" % ((end_time - start_time)/60))
+print("--- Start time: %s ---" % start_local_time)
+print("--- End time: %s ---" % end_local_time)
