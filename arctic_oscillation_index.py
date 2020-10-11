@@ -13,7 +13,7 @@ import xarray as xr
 from xarray import apply_ufunc
 from scipy.stats import linregress
 import time
-
+import matplotlib as mpl 
 #https://www.ncdc.noaa.gov/teleconnections/ao/
 #https://cds.climate.copernicus.eu/
 #ERA5 monthly averaged data on single levels from 1979 to present
@@ -28,12 +28,7 @@ ao_idx=ao_idx[348:]
 #above 66.5°N, starting 1979-01-01
 era = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
 
-u10=era.u10[:,0,:,:]
-
-
-plt.figure()
-plt.imshow(era.u10[0,0,:,:], aspect='auto')
-
+era_var=era.t2m[:,0,:,:]
 
 def linreg(A):
     A_arr=np.array(A)
@@ -47,10 +42,36 @@ def linreg(A):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-CCs=np.apply_along_axis(linreg, 0, u10)
+CCs=np.apply_along_axis(linreg, 0, era_var)
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)
 print("--- Processing time: %.2f minutes ---" % ((end_time - start_time)/60))
 print("--- Start time: %s ---" % start_local_time)
 print("--- End time: %s ---" % end_local_time)
+
+plt.imshow(CCs, aspect='auto')
+plt.colorbar()
+
+# set the colormap and centre the colorbar
+class MidpointNormalize(mpl.colors.Normalize):
+    """Normalise the colorbar."""
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+    
+
+
+
+plt.subplot(projection="polar")
+plt.imshow(CCs, vmin=np.nanmin(CCs), vmax=np.nanmax(CCs), norm=MidpointNormalize(np.nanmin(CCs),np.nanmax(CCs), 0.),
+           cmap='bwr', aspect='auto')
+plt.colorbar()
+
+# plt.pcolormesh(np.indices((np.shape(CCs)[0],np.shape(CCs)[1]))[0], 
+#                np.indices((np.shape(CCs)[0],np.shape(CCs)[1]))[1], 
+#                CCs)
