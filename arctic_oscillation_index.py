@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import xarray as xr
-from xarray import apply_ufunc
 from scipy.stats import linregress
 import time
 import matplotlib as mpl 
@@ -23,6 +22,12 @@ ao_idx=pd.read_csv('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/AO_i
 ao_idx['Time']=pd.to_datetime(ao_idx.Date,format='%Y%m')
 
 ao_idx=ao_idx[348:]
+
+nao_idx=pd.read_csv('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/NAO_index_monthly_tab.txt', sep='  ', header=None)
+
+nao_idx_arr=nao_idx.iloc[:,1:].values.flatten()
+
+nao_idx_arr=nao_idx_arr[348:-3]
 
 
 #above 66.5°N, starting 1979-01-01
