@@ -37,7 +37,8 @@ era_var=era.t2m[:,0,:,:]
 
 def linreg(A):
     A_arr=np.array(A)
-    ao_arr=np.array(ao_idx.Value)
+    #ao_arr=np.array(ao_idx.Value)
+    ao_arr=np.array(nao_idx_arr)
     mask=[(~np.isnan(A_arr)) & (~np.isnan(ao_arr))]
     results=linregress(A_arr[mask],ao_arr[mask])
     corrcoeff=results.rvalue
@@ -55,8 +56,6 @@ print("--- Processing time: %.2f minutes ---" % ((end_time - start_time)/60))
 print("--- Start time: %s ---" % start_local_time)
 print("--- End time: %s ---" % end_local_time)
 
-plt.imshow(CCs, aspect='auto')
-plt.colorbar()
 
 # set the colormap and centre the colorbar
 class MidpointNormalize(mpl.colors.Normalize):
