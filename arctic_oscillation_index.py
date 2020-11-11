@@ -44,8 +44,8 @@ era_var = np.array(era.u10[:, 0, :, :])
 
 def linreg(A_arr):
     
-    mask = [(~np.isnan(A_arr)) & (~np.isnan(idx_arr))]
-    results = linregress(A_arr[mask], idx_arr[mask])
+    mask = [(~np.isnan(A_arr)) & (~np.isnan(nao_idx_arr))]
+    results = linregress(A_arr[mask], nao_idx_arr[mask])
     corrcoeff = results.rvalue
     
     return corrcoeff
@@ -135,11 +135,7 @@ ax.boxplot(monthly_CCs_flat.values())
 ax.set_xticklabels(monthly_CCs_flat.keys())
 ax.axhline(annual_median, color='darkblue', LineStyle='--', alpha=0.5)
 
-<<<<<<< HEAD
-=======
 
-
->>>>>>> 8d143d717a746fcfc1785794e930962fd971127b
 # %% automatic function
 
 def compare_era_cindex(era, variable, cindex, time='year'):
