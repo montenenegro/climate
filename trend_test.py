@@ -56,8 +56,8 @@ class MidpointNormalize(mpl.colors.Normalize):
     
 
 # plt.subplot(projection="polar")
-plt.imshow(CCs, vmin=np.nanmin(CCs), vmax=np.nanmax(CCs), 
-           norm=MidpointNormalize(np.nanmin(CCs), np.nanmax(CCs), 0.),
+plt.imshow(TCs, vmin=np.nanmin(TCs), vmax=np.nanmax(TCs), 
+           norm=MidpointNormalize(np.nanmin(TCs), np.nanmax(TCs), 0.),
            cmap='bwr', aspect='auto')
 plt.colorbar()
 
