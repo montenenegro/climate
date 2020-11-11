@@ -10,51 +10,30 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import xarray as xr
-from scipy.stats import linregress
 import time
 import matplotlib as mpl 
 from tqdm import tqdm 
-from matplotlib import gridspec
-
-#  https://www.ncdc.noaa.gov/teleconnections/ao/
-#  https://cds.climate.copernicus.eu/
-#  ERA5 monthly averaged data on single levels from 1979 to present
-
-ao_idx = pd.read_csv('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
-                     + 'AO_index_monthly.txt')
-
-ao_idx['Time'] = pd.to_datetime(ao_idx.Date, format='%Y%m')
-
-ao_idx = ao_idx[348:]
-
-nao_idx = pd.read_csv('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
-                      + 'NAO_index_monthly_tab.txt', sep='  ', header=None)
-
-nao_idx_arr = nao_idx.iloc[:, 1:].values.flatten()
-
-nao_idx_arr = nao_idx_arr[348:-3]
+import pymannkendall as mk
 
 
 # above 66.5°N, starting 1979-01-01
 era = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
                       + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
 
-era_var = np.array(era.u10[:, 0, :, :])
+era_var = np.array(era.t2m[:, 0, :, :])
 
 
-def linreg(A_arr):
+def MannKendall_test(A_arr):
     
-    mask = [(~np.isnan(A_arr)) & (~np.isnan(idx_arr))]
-    results = linregress(A_arr[mask], idx_arr[mask])
-    corrcoeff = results.rvalue
-    
-    return corrcoeff
+    result = mk.original_test(A_arr).h
+        
+    return result
 
 
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-CCs = np.apply_along_axis(linreg, 0, era_var)
+TCs = np.apply_along_axis(MannKendall_test, 0, era_var)
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)
