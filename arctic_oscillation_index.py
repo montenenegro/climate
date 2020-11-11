@@ -135,6 +135,11 @@ ax.boxplot(monthly_CCs_flat.values())
 ax.set_xticklabels(monthly_CCs_flat.keys())
 ax.axhline(annual_median, color='darkblue', LineStyle='--', alpha=0.5)
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 8d143d717a746fcfc1785794e930962fd971127b
 # %% automatic function
 
 def compare_era_cindex(era, variable, cindex, time='year'):
