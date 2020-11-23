@@ -39,10 +39,34 @@ nao_idx_arr = nao_idx_arr[348:-3]
 era = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
                       + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
 
-era_var = np.array(era.u10[:, 0, :, :])
+era_var = np.array(era.t2m[:, 0, :, :])
+
+era_time = pd.to_datetime(np.array(era['time']), format='%Y-%*-%dT00:00:00.000000000')
 
 
-def linreg(A_arr):
+def annual_resampling(A_arr):
+    
+    A_df = pd.DataFrame(A_arr)
+    A_df.index = era_time
+    
+    A_AR = A_df.resample('1Y').mean()
+    
+    return A_AR
+    
+
+start_time = time.time()
+start_local_time = time.ctime(start_time)
+    
+annual_era_var = np.apply_along_axis(annual_resampling, 0, era_var)
+
+end_time = time.time()
+end_local_time = time.ctime(end_time)
+print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
+print("--- Start time: %s ---" % start_local_time)
+print("--- End time: %s ---" % end_local_time)
+
+
+def linreg_idx(A_arr):
     
     mask = [(~np.isnan(A_arr)) & (~np.isnan(nao_idx_arr))]
     results = linregress(A_arr[mask], nao_idx_arr[mask])
@@ -51,10 +75,44 @@ def linreg(A_arr):
     return corrcoeff
 
 
+def linreg_temp(A_arr):
+    
+    x = np.arange(0, len(A_arr))
+    
+    mask = [(~np.isnan(A_arr)) & (~np.isnan(x))]
+    results = linregress(A_arr[mask], x[mask])
+    
+    rvalue = results.rvalue
+    
+    return rvalue
+
+
+def linregress_time(A_arr):
+    
+    x = np.arange(0, len(A_arr))
+    
+    mask = [(~np.isnan(A_arr)) & (~np.isnan(x))]
+    results = linregress((A_arr - 273.15)[mask], x[mask])
+    y = results.slope * x + results.intercept
+    
+    rvalue = results.rvalue 
+    
+    residuals = np.nanmean(np.abs(y - A_arr))
+    
+    variation = y[-1] - y[0]
+    
+    ratio = variation / residuals 
+    
+    return ratio, variation, rvalue
+
+
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-CCs = np.apply_along_axis(linreg, 0, era_var)
+# CCs = np.apply_along_axis(linreg_idx, 0, era_var)
+
+ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_var)
+
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)
@@ -77,9 +135,32 @@ class MidpointNormalize(mpl.colors.Normalize):
     
 
 # plt.subplot(projection="polar")
+plt.figure()
 plt.imshow(CCs, vmin=np.nanmin(CCs), vmax=np.nanmax(CCs), 
            norm=MidpointNormalize(np.nanmin(CCs), np.nanmax(CCs), 0.),
            cmap='bwr', aspect='auto')
+plt.title('Correlation ERAtemp NAO', fontsize=20)
+plt.colorbar()
+
+plt.figure()
+plt.imshow(ratios, vmin=np.nanmin(ratios), vmax=np.nanmax(ratios), 
+           norm=MidpointNormalize(np.nanmin(ratios), np.nanmax(ratios), 0.),
+           cmap='bwr', aspect='auto')
+plt.title('Ratio temperature variations/residuals', fontsize=20)
+plt.colorbar()
+
+plt.figure()
+plt.imshow(rvalues, vmin=np.nanmin(rvalues), vmax=np.nanmax(rvalues), 
+           norm=MidpointNormalize(np.nanmin(rvalues), np.nanmax(rvalues), 0.),
+           cmap='bwr', aspect='auto')
+plt.title('ERAtemp Correlation coefficient with time', fontsize=20)
+plt.colorbar()
+
+plt.figure()
+plt.imshow(variations, vmin=np.nanmin(variations), vmax=np.nanmax(variations), 
+           norm=MidpointNormalize(np.nanmin(variations), np.nanmax(variations), 0.),
+           cmap='bwr', aspect='auto')
+plt.title('ERAtemp linregress difference', fontsize=20)
 plt.colorbar()
 
 
@@ -143,5 +224,4 @@ def compare_era_cindex(era, variable, cindex, time='year'):
     if time == 'year':
         
         CCs = np.apply_along_axis(linreg, 0, era_var)
-    
     
