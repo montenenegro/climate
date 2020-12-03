@@ -37,15 +37,18 @@ nao_idx_arr = nao_idx_arr[348:-3]
 
 # above 66.5°N, starting 1979-01-01
 era_arctic = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                             + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
+                             + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11"
+                             + "d905ef570a.nc")
 
 # 500hPa, northern hemisphere, starting 1979-01-01
 era_500hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                             + "-1606980488.2916174-29195-17-742f648e-b0f6-4780-92d0-888ed5090d2f.nc")
+                             + "-1606980488.2916174-29195-17-742f648e-b0f6-4780-92d0"
+                             + "-888ed5090d2f.nc").z_0001[:-1, :, :]
 
 # 1000hPa, northern hemisphere, starting 1979-01-01
 era_1000hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                              + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349-4d72949f9cee.nc")
+                              + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349"
+                              + "-4d72949f9cee.nc").z_0001[:-1, :, :]
 
 
 era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
@@ -106,9 +109,12 @@ def linregress_time(A_arr):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
+# CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
+CCs = np.apply_along_axis(linreg_idx, 0, era_500hpa)
 
-ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
+# print('linreg_idx done')
+
+# ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
 
 
 end_time = time.time()
