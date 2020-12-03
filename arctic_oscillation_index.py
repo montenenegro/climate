@@ -36,12 +36,12 @@ nao_idx_arr = nao_idx_arr[348:-3]
 
 
 # above 66.5°N, starting 1979-01-01
-era = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                      + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
+era_arctic = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
+                             + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
 
-era_var = np.array(era.t2m[:, 0, :, :])
+era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
 
-era_time = pd.to_datetime(np.array(era['time']), format='%Y-%*-%dT00:00:00.000000000')
+era_time = pd.to_datetime(np.array(era_arctic['time']), format='%Y-%*-%dT00:00:00.000000000')
 
 
 def annual_resampling(A_arr):
@@ -57,7 +57,7 @@ def annual_resampling(A_arr):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-annual_era_var = np.apply_along_axis(annual_resampling, 0, era_var)
+annual_era_var = np.apply_along_axis(annual_resampling, 0, era_arctic_temp)
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)
@@ -73,18 +73,6 @@ def linreg_idx(A_arr):
     corrcoeff = results.rvalue
     
     return corrcoeff
-
-
-def linreg_temp(A_arr):
-    
-    x = np.arange(0, len(A_arr))
-    
-    mask = [(~np.isnan(A_arr)) & (~np.isnan(x))]
-    results = linregress(A_arr[mask], x[mask])
-    
-    rvalue = results.rvalue
-    
-    return rvalue
 
 
 def linregress_time(A_arr):
@@ -109,9 +97,9 @@ def linregress_time(A_arr):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-# CCs = np.apply_along_axis(linreg_idx, 0, era_var)
+CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
 
-ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_var)
+ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
 
 
 end_time = time.time()
@@ -172,13 +160,13 @@ for month in tqdm(range(1, 13)):
     
     month_selection = ao_idx.Time.dt.month == month
     
-    era_month = era_var[month_selection, :, :]
+    era_month = era_arctic_temp[month_selection, :, :]
     
     ao_month = nao_idx_arr[month_selection]
     
     idx_arr = ao_month 
     
-    monthly_CCs[month] = np.apply_along_axis(linreg, 0, era_month)
+    monthly_CCs[month] = np.apply_along_axis(linreg_idx, 0, era_month)
 
 # %% map correlation per month
 
@@ -215,13 +203,4 @@ ax = plt.subplot(gs[0])
 ax.boxplot(monthly_CCs_flat.values())
 ax.set_xticklabels(monthly_CCs_flat.keys())
 ax.axhline(annual_median, color='darkblue', LineStyle='--', alpha=0.5)
-
-
-# %% automatic function
-
-def compare_era_cindex(era, variable, cindex, time='year'):
-    
-    if time == 'year':
-        
-        CCs = np.apply_along_axis(linreg, 0, era_var)
     
