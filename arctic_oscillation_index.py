@@ -39,6 +39,15 @@ nao_idx_arr = nao_idx_arr[348:-3]
 era_arctic = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
                              + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11d905ef570a.nc")
 
+# 500hPa, northern hemisphere, starting 1979-01-01
+era_500hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
+                             + "-1606980488.2916174-29195-17-742f648e-b0f6-4780-92d0-888ed5090d2f.nc")
+
+# 1000hPa, northern hemisphere, starting 1979-01-01
+era_1000hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
+                              + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349-4d72949f9cee.nc")
+
+
 era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
 
 era_time = pd.to_datetime(np.array(era_arctic['time']), format='%Y-%*-%dT00:00:00.000000000')
@@ -54,16 +63,16 @@ def annual_resampling(A_arr):
     return A_AR
     
 
-start_time = time.time()
-start_local_time = time.ctime(start_time)
+# start_time = time.time()
+# start_local_time = time.ctime(start_time)
     
-annual_era_var = np.apply_along_axis(annual_resampling, 0, era_arctic_temp)
+# annual_era_var = np.apply_along_axis(annual_resampling, 0, era_arctic_temp)
 
-end_time = time.time()
-end_local_time = time.ctime(end_time)
-print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
-print("--- Start time: %s ---" % start_local_time)
-print("--- End time: %s ---" % end_local_time)
+# end_time = time.time()
+# end_local_time = time.ctime(end_time)
+# print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
+# print("--- Start time: %s ---" % start_local_time)
+# print("--- End time: %s ---" % end_local_time)
 
 
 def linreg_idx(A_arr):
