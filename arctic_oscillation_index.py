@@ -110,7 +110,7 @@ def linregress_time(A_arr):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-# CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
+CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
 CCs = np.apply_along_axis(linreg_idx, 0, era_500hpa)
 
 # print('linreg_idx done')
