@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # %% set path to Github repository
 
-# path = 'C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/raw_GISTEMP_csv_data/'
+path = 'C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/raw_GISTEMP_csv_data/'
 
 # %% get centroid coordinates of ERA cells
 
@@ -40,7 +40,7 @@ rows, cols = np.meshgrid(np.arange(np.shape(lat_mat)[0]),
 
 era_positions = pd.DataFrame({'row': rows.ravel(),
                               'col': cols.ravel(),
-                              'lon': lon_mat.ravel()
+                              'lon': lon_mat.ravel(),
                               'lat': lat_mat.ravel()})
 
 era_gdfpoints = gpd.GeoDataFrame(geometry=gpd.points_from_xy(era_positions.lon, 
@@ -58,7 +58,7 @@ def ckdnearest(nA, nB):
     gdfmatching_B = era_gdfpoints.loc[idx].reset_index(drop=True)['geometry']
     
     res = pd.DataFrame({'gistemp_station': gdf_A, 
-                        'era_point': gdfmatching_B,
+                        'era_cell': gdfmatching_B,
                         'distance': pd.Series(dist)})
     
     return res, idx
@@ -66,11 +66,9 @@ def ckdnearest(nA, nB):
 
 # %% match GISTEMP and ERA data
 
-path2 = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/raw_GISTEMP_csv_data/'
 
 
-def gistemp_era_match(station_filename=path2 + 'CA002401200.csv',
-                      metadata_filename='C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/GHCNv4_stations.txt'):
+def gistemp_era_match(station_filename, metadata_filename):
     
     
     # read station data
@@ -82,13 +80,13 @@ def gistemp_era_match(station_filename=path2 + 'CA002401200.csv',
     station_data.rename(columns={'level_1': 'MONTH', 0: 'Temperature_C'}, 
                         inplace=True)
     
-    station_data.index = pd.to_datetime(dataset.YEAR.astype(str) + dataset.MONTH, 
-                                        format='%Y%b')
+    station_data.index = pd.to_datetime(station_data.YEAR.astype(str) 
+                                        + station_data.MONTH, format='%Y%b')
     
     station_data = station_data[((station_data.YEAR >= 1979) 
                                 & (station_data.YEAR <= 2020))]
     
-    dataset.drop(['YEAR', 'MONTH'], axis=1, inplace=True)
+    station_data.drop(['YEAR', 'MONTH'], axis=1, inplace=True)
     
     # get station coordinates from metadata file
     stations_metadata = pd.read_csv(metadata_filename, delimiter=r"\s+")
@@ -102,24 +100,24 @@ def gistemp_era_match(station_filename=path2 + 'CA002401200.csv',
                                station_spec.Lat.iloc[0])).T
         
     # get closest ERA5 point to station location
-    era_matching_point, idx = ckdnearest(station_point, era_points)
-    era_matching_rowcol = mat_positions.iloc[idx[0]]
+    era_matching_cell, idx = ckdnearest(station_point, era_points)
+    era_matching_rowcol = era_positions.iloc[idx[0]]
     
     # target time series at the point of interest
-    era_point_timeseries = np.array(era.t2m[:, 0, era_matching_rowcol.row, 
-                                    era_matching_rowcol.col]) - 273.15
+    era_point_timeseries = np.array(era.t2m[:, 0, int(era_matching_rowcol.row), 
+                                    int(era_matching_rowcol.col)]) - 273.15
     
     era_point_timeseries_df = pd.DataFrame({'era_temperature': era_point_timeseries}, 
                                            index=era_time)
     
     # merge GISTEMP and ERA data
-    merged_gistemp_era=pd.merge_asof(station_data, era_point_timeseries, 
+    merged_gistemp_era=pd.merge_asof(station_data, era_point_timeseries_df, 
                                      left_index=True, right_index=True)
     
     return merged_gistemp_era, station_ID
 
 
-#%% run for all stations
+# %% run for all stations
 
 plt=0
 
