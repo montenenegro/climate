@@ -262,7 +262,9 @@ def visualisation(variable, file, lims=False, step=0.1):
     
     plt.figure(figsize=(9, 5))
     
-    map = Basemap(projection='npstere', boundinglat=65, lon_0=0, resolution='l')      
+    map = Basemap(projection='npstere', 
+                  boundinglat=np.nanmin(np.array(file['latitude'][:])) - 2, 
+                  lon_0=0, resolution='l')      
     
     map.drawcoastlines(linewidth=.5)  # draws coastline 
     
@@ -291,4 +293,5 @@ def visualisation(variable, file, lims=False, step=0.1):
 
 
 visualisation(ratios, era_arctic, lims=[-0.1, 3])
-
+visualisation(rvalues, era_arctic, lims=[-0.05, 0.3], step=0.001)
+visualisation(CCs, era_500hpa_file, step=0.01)
