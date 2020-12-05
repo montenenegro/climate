@@ -295,3 +295,4 @@ def visualisation(variable, file, lims=False, step=0.1):
 visualisation(ratios, era_arctic, lims=[-0.1, 3])
 visualisation(rvalues, era_arctic, lims=[-0.05, 0.3], step=0.001)
 visualisation(CCs, era_500hpa_file, step=0.01)
+
