@@ -16,6 +16,8 @@ import matplotlib as mpl
 from tqdm import tqdm 
 from matplotlib import gridspec
 import multiprocessing
+import mpl_toolkits
+from mpl_toolkits.basemap import Basemap
 
 #  https://www.ncdc.noaa.gov/teleconnections/ao/
 #  https://cds.climate.copernicus.eu/
@@ -42,14 +44,16 @@ era_arctic = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.int
                              + "d905ef570a.nc")
 
 # 500hPa, northern hemisphere, starting 1979-01-01
-era_500hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                             + "-1606980488.2916174-29195-17-742f648e-b0f6-4780-92d0"
-                             + "-888ed5090d2f.nc").z_0001[:-1, :, :]
+era_500hpa_file = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
+                                  + "-1606980488.2916174-29195-17-742f648e-b0f6-4780-92d0"
+                                  + "-888ed5090d2f.nc")
+era_500hpa = era_500hpa_file.z_0001[:-1, :, :]
 
 # 1000hPa, northern hemisphere, starting 1979-01-01
-era_1000hpa = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                              + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349"
-                              + "-4d72949f9cee.nc").z_0001[:-1, :, :]
+era_1000hpa_file = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
+                                   + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349"
+                                   + "-4d72949f9cee.nc")
+era_1000hpa = era_1000hpa_file.z_0001[:-1, :, :]
 
 
 era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
@@ -110,7 +114,7 @@ def linregress_time(A_arr):
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
+# CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
 CCs = np.apply_along_axis(linreg_idx, 0, era_500hpa)
 
 # print('linreg_idx done')
@@ -251,3 +255,40 @@ def parallel_apply_along_axis(func1d, axis, arr, *args, **kwargs):
 def unpacking_apply_along_axis(all_args):
     (func1d, axis, arr, args, kwargs) = all_args
     
+    
+# %% Nicole's visualisation
+
+def visualisation(variable, file, lims=False, step=0.1):
+    
+    plt.figure(figsize=(9, 5))
+    
+    map = Basemap(projection='npstere', boundinglat=65, lon_0=0, resolution='l')      
+    
+    map.drawcoastlines(linewidth=.5)  # draws coastline 
+    
+    parallels = np.arange(-80, 81, 10.)  # make latitude lines ever 30 degrees from 30N-50N
+    meridians = np.arange(-180, 181, 20.)  # make longitude lines every 60 degrees from 95W to 70W
+    
+    map.drawparallels(parallels, labels=[1, 0, 0, 0], linewidth=0.2, fontsize=8)
+    map.drawmeridians(meridians, labels=[0, 0, 0, 1], linewidth=0.2, fontsize=8)
+    
+    lons, lats = np.meshgrid(np.array(file['longitude'][:]), 
+                             np.array(file['latitude'][:]))  # 2D lat lon to plot contours
+    x, y = map(lons, lats)
+    
+    if type(lims) == bool:
+        clevsf = np.arange(np.nanmin(variable), np.nanmax(variable), step)
+    else:
+        clevsf = np.arange(lims[0], lims[1], step) 
+    
+    colormap = 'coolwarm'
+    
+    csf = map.contourf(x, y, variable, clevsf, extend='both', cmap=colormap)  # filled contour
+    cb = map.colorbar(csf, "right", extend='both', size="3%", pad="1%")
+    plt.show()
+
+# plt.savefig(path+'Plots/'+name+'_'+sign+'.png', dpi=600)
+
+
+visualisation(ratios, era_arctic, lims=[-0.1, 3])
+
