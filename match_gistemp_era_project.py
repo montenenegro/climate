@@ -20,10 +20,11 @@ import matplotlib.pyplot as plt
 # %% set required paths
 
 # path to Github repository
-gr_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/'
+gr_path = 'C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
 
 # path to GHCNv4 datasets
-dataset_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/raw_GISTEMP_csv_data/'
+dataset_path = 'C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/' \
+    + 'raw_GISTEMP_csv_data/'
 
 
 # %% get centroid coordinates of ERA cells
@@ -65,7 +66,7 @@ def match(station_point, era_points):
     
     idx = dists.argmin()
     
-    station_gdfpoint = Point(station_point[0,0], station_point[0,1])
+    station_gdfpoint = Point(station_point[0, 0], station_point[0, 1])
     matching_era_cell = era_gdfpoints.loc[idx]['geometry']
     
     res = gpd.GeoDataFrame({'gistemp_station': [station_gdfpoint], 
@@ -83,20 +84,10 @@ def gistemp_era_match(station_filename,
     
     # read station data
     station_ID = station_filename.split(os.sep)[-1].split('.')[0]
-    station_data = pd.read_csv(station_filename, 
-                               na_values=999.9, index_col=0).iloc[:, :12]
-    
-    station_data = station_data.stack(dropna=False).reset_index()
-    station_data.rename(columns={'level_1': 'MONTH', 0: 'Temperature_C'}, 
-                        inplace=True)
-    
-    station_data.index = pd.to_datetime(station_data.YEAR.astype(str) 
-                                        + station_data.MONTH, format='%Y%b')
-    
-    station_data = station_data[((station_data.YEAR >= 1979) 
-                                & (station_data.YEAR <= 2020))]
-    
-    station_data.drop(['YEAR', 'MONTH'], axis=1, inplace=True)
+    station_data = pd.read_csv(station_filename, index_col=0)
+    station_data.index = pd.to_datetime(station_data.index)
+    station_data = station_data[((station_data.index.year >= 1979) 
+                               & (station_data.index.year <= 2020))]
     
     # get station coordinates from metadata file
     stations_metadata = pd.read_csv(metadata_filename, delimiter=r"\s+")
@@ -117,15 +108,13 @@ def gistemp_era_match(station_filename,
                                            index=era_time)
     
     # merge GISTEMP and ERA data
-    merged_gistemp_era=pd.merge_asof(station_data, era_point_timeseries_df, 
-                                     left_index=True, right_index=True)
+    merged_gistemp_era = pd.merge_asof(station_data, era_point_timeseries_df, 
+                                       left_index=True, right_index=True)
     
     return merged_gistemp_era, station_ID
 
 
 # %% run for all stations
-
-visualisation = False
 
 station_filenames = glob.glob(dataset_path + '*.csv')
 
@@ -137,11 +126,3 @@ for i, sfn in tqdm(enumerate(station_filenames)):
     
     results[station_name] = station_results 
     
-    if visualisation:
-        plt.figure()
-        plt.plot(results.gistemp_temperature - results.era_temperature, 
-                 'o-', color='darkorange')
-        plt.xlabel('time (years)', fontsize=18)
-        plt.ylabel('GISTEMP minus ERA temperature (°C)', fontsize=18)
-        plt.tick_params(axis='both', which='major', labelsize=17)
-        
