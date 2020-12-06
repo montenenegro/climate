@@ -65,7 +65,7 @@ def match(station_point, era_points):
     
     idx = dists.argmin()
     
-    station_gdfpoint = Point(station_point[0,0], station_point[0,1])
+    station_gdfpoint = Point(station_point[0, 0], station_point[0, 1])
     matching_era_cell = era_gdfpoints.loc[idx]['geometry']
     
     res = gpd.GeoDataFrame({'gistemp_station': [station_gdfpoint], 
@@ -93,9 +93,6 @@ def gistemp_era_match(station_filename,
     station_data.index = pd.to_datetime(station_data.YEAR.astype(str) 
                                         + station_data.MONTH, format='%Y%b')
     
-    station_data = station_data[((station_data.YEAR >= 1979) 
-                                & (station_data.YEAR <= 2020))]
-    
     station_data.drop(['YEAR', 'MONTH'], axis=1, inplace=True)
     
     # get station coordinates from metadata file
@@ -117,8 +114,8 @@ def gistemp_era_match(station_filename,
                                            index=era_time)
     
     # merge GISTEMP and ERA data
-    merged_gistemp_era=pd.merge_asof(station_data, era_point_timeseries_df, 
-                                     left_index=True, right_index=True)
+    merged_gistemp_era = pd.merge_asof(station_data, era_point_timeseries_df, 
+                                       left_index=True, right_index=True)
     
     return merged_gistemp_era, station_ID
 
@@ -129,6 +126,7 @@ visualisation = False
 
 station_filenames = glob.glob(dataset_path + '*.csv')
 
+# store in dict to keep initial (variable) GHCNv4 temporal coverage
 results = {}
 
 for i, sfn in tqdm(enumerate(station_filenames)):

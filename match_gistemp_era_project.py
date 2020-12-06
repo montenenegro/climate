@@ -15,7 +15,7 @@ import glob
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import scipy.stats 
 
 # %% set required paths
 
@@ -118,11 +118,65 @@ def gistemp_era_match(station_filename,
 
 station_filenames = glob.glob(dataset_path + '*.csv')
 
-results = {}
+era_temp = pd.DataFrame()
+gistemp_temp = pd.DataFrame()
 
 for i, sfn in tqdm(enumerate(station_filenames)):
     
     station_results, station_name = gistemp_era_match(station_filename=sfn) 
     
-    results[station_name] = station_results 
+    era_temp[station_name] = station_results['era_temperature'] 
+    gistemp_temp[station_name] = station_results['Temperature_C'] 
+    
+    
+    
+# %% emergence data
+
+
+def emergence_date(sub_df):
+    
+    sub_df_year = sub_df.resample('Y').mean()
+    threshold = np.nanmax(sub_df_year['1979':'2000'])
+    
+    if np.sum(sub_df_year > threshold) > 0:
+        emergence = sub_df_year[sub_df_year > threshold].index[0]
+        # plt.figure()
+        # plt.plot(sub_df_year)
+        # plt.axhline(threshold, LineStyle='--', color='red')
+        
+    else:
+        # plt.figure()
+        # plt.plot(sub_df_year)
+        # plt.axhline(threshold, LineStyle='--', color='red')
+        
+        res = scipy.stats.linregress(sub_df_year['2000':].index.year.tolist(), 
+                                     sub_df_year['2000':].values)
+        
+        dates = pd.date_range(start='2000-12-31', end='2100-12-31', freq='Y')
+        
+        projection = pd.DataFrame(np.array(dates.year.tolist()) * res.slope 
+                                  + res.intercept)
+        
+        projection.index = dates
+        
+        residuals = np.nanmean(np.abs(sub_df_year['2000':'2020'] 
+                                      - projection['2000':'2020'].iloc[:,0]))
+        
+        projection_adj = projection + residuals 
+        
+        # plt.plot(projection)
+        # plt.plot(projection_adj)
+        
+        try:
+            emergence = projection_adj.iloc[:,0][projection_adj.iloc[:,0] > threshold].index[0]
+        
+        except IndexError:
+            emergence = np.nan
+        
+    return emergence
+     
+era_ED = era_temp.apply(emergence_date, axis=0)
+gistemp_ED = gistemp_temp.apply(emergence_date, axis=0)
+
+emergence_dates = pd.DataFrame({'ERA5': era_ED, 'GISTEMP': gistemp_ED})
     
