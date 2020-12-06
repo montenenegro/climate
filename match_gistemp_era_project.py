@@ -179,4 +179,8 @@ era_ED = era_temp.apply(emergence_date, axis=0)
 gistemp_ED = gistemp_temp.apply(emergence_date, axis=0)
 
 emergence_dates = pd.DataFrame({'ERA5': era_ED, 'GISTEMP': gistemp_ED})
+
+ED_deviations = emergence_dates.ERA5 - emergence_dates.GISTEMP
+
+ED_deviations_years = ED_deviations.dt.days / 365
     
