@@ -15,6 +15,7 @@ import glob
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 
 # %% set required paths
@@ -98,6 +99,7 @@ def gistemp_era_match(station_filename,
     # get station coordinates from metadata file
     stations_metadata = pd.read_csv(metadata_filename, delimiter=r"\s+")
     station_spec = stations_metadata[stations_metadata.ID == station_ID]
+    station_name = station_spec.Station.iloc[0]
     
     station_point = np.vstack((station_spec.Lon.iloc[0], 
                                station_spec.Lat.iloc[0])).T
@@ -117,7 +119,7 @@ def gistemp_era_match(station_filename,
     merged_gistemp_era = pd.merge_asof(station_data, era_point_timeseries_df, 
                                        left_index=True, right_index=True)
     
-    return merged_gistemp_era, station_ID
+    return merged_gistemp_era, station_ID, station_name
 
 
 # %% run for all stations
@@ -131,15 +133,17 @@ results = {}
 
 for i, sfn in tqdm(enumerate(station_filenames)):
     
-    station_results, station_name = gistemp_era_match(station_filename=sfn) 
+    st_results, st_ID, st_name = gistemp_era_match(station_filename=sfn) 
     
-    results[station_name] = station_results 
+    results[st_ID] = st_results 
     
     if visualisation:
+        
         plt.figure()
-        plt.plot(results.gistemp_temperature - results.era_temperature, 
+        plt.plot(st_results.Temperature_C - st_results.era_temperature,
                  'o-', color='darkorange')
-        plt.xlabel('time (years)', fontsize=18)
-        plt.ylabel('GISTEMP minus ERA temperature (°C)', fontsize=18)
-        plt.tick_params(axis='both', which='major', labelsize=17)
+        plt.ylabel('GHCNv4 minus ERA5 temperature (°C)', fontsize=18)
+        plt.tick_params(axis='both', which='major', labelsize=16)
+        plt.axvline(0, LineStyle='--', color='darkgray')
+        plt.title('%s (%s)' %(st_name, st_ID), fontsize=20)
         
