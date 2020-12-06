@@ -3,19 +3,20 @@
 
 @author: Adrien Wehrlé, Jason Box, GEUS (Geological Survey of Denmark and Greenland)
 
+Match GHCNv4 meteorological station datasets with corresponding ERA5 cells.
+
 """
 
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 import xarray as xr
-from scipy.spatial import distance
+from scipy.spatial import distance as dist
 from shapely.geometry import Point
 import glob
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 
 # %% set required paths
@@ -23,72 +24,103 @@ import matplotlib.dates as mdates
 # path to Github repository
 gr_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/'
 
-# path to GHCNv4 datasets
+# path to folder containing GHCNv4 datasets
 dataset_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/raw_GISTEMP_csv_data/'
 
+# filename of era5 dataset
+era5_filename = "C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal" \
+            + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11" \
+            + "d905ef570a.nc"
 
-# %% get centroid coordinates of ERA cells
 
-# above 66.5°N, starting 1979-01-01
-era = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
-                      + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11"
-                      + "d905ef570a.nc")
+# %% get centroid coordinates of ERA5 cells
 
-era_time = pd.to_datetime(np.array(era['time']), format='%Y-%*-%dT00:00:00.000000000')
-    
-lon = np.array(era['longitude'])
-lat = np.array(era['latitude'])
-    
+# open ERA5 dataset
+era5 = xr.open_dataset(era5_path)
+
+# convert time to datetime
+era5_time = pd.to_datetime(np.array(era5['time']), 
+                           format='%Y-%*-%dT00:00:00.000000000')
+
+# extract coordinates
+lon = np.array(era5['longitude'])
+lat = np.array(era5['latitude'])
 lon_mat, lat_mat = np.meshgrid(lon, lat)
 
+# save corresponding matrix positions
 rows, cols = np.meshgrid(np.arange(np.shape(lat_mat)[0]), 
                          np.arange(np.shape(lat_mat)[1]))
 
-era_positions = pd.DataFrame({'row': rows.ravel(),
-                              'col': cols.ravel(),
-                              'lon': lon_mat.ravel(),
-                              'lat': lat_mat.ravel()})
+era5_positions = pd.DataFrame({'row': rows.ravel(),
+                               'col': cols.ravel(),
+                               'lon': lon_mat.ravel(),
+                               'lat': lat_mat.ravel()})
 
-era_points = np.vstack((era_positions.lon.ravel(), 
-                        era_positions.lat.ravel())).T
+era5_points = np.vstack((era5_positions.lon.ravel(), 
+                        era5_positions.lat.ravel())).T
 
-era_gdfpoints = gpd.GeoDataFrame(geometry=gpd.points_from_xy(era_positions.lon, 
-                                                             era_positions.lat))
+# create GeoDataFrame from points
+era5_gdfpoints = gpd.GeoDataFrame(geometry=gpd.points_from_xy(era5_positions.lon, 
+                                                              era5_positions.lat))
 
 
-# %% get ERA cell corresponding to station position 
+# %% get ERA5 cell corresponding to station position 
 
-def match(station_point, era_points):
+def data_match(station_point, era5_points):
+    '''
+    Find closest ERA5 cell centroid to given GHCNv4 station.
     
-    dists = distance.cdist(station_point, era_points)
+    INPUTS:
+        station_point: station position in (lon, lat) [array]
+        era5_points: centroids of ERA5 cells in (lon, lat) [array]
+        
+    OUTPUTS:
+        results: shapely points of GHCNv4 station and closest ERA5 cell 
+                 centroid and associated distance [GeoDataFrame]
+        era5_cell: index of the matching ERA5 cell [int]
+    '''
+    distances = dist.cdist(station_point, era5_points)
     
-    dist = np.nanmin(dists)
+    distance = np.nanmin(distances)
     
-    idx = dists.argmin()
+    era5_cell = distances.argmin()
     
     station_gdfpoint = Point(station_point[0, 0], station_point[0, 1])
-    matching_era_cell = era_gdfpoints.loc[idx]['geometry']
+    matching_era5_cell = era5_gdfpoints.loc[era5_cell]['geometry']
     
-    res = gpd.GeoDataFrame({'gistemp_station': [station_gdfpoint], 
-                            'era_cell': [matching_era_cell],
-                            'distance': pd.Series(dist)})
+    results = gpd.GeoDataFrame({'GHCNv4_station': [station_gdfpoint], 
+                                'ERA5_cell': [matching_era5_cell],
+                                'distance': pd.Series(dist)})
     
-    return res, idx
+    return results, era5_cell
 
 
-# %% match GISTEMP and ERA data
+# %% match GHCNv4 and ERA5 data
 
 
-def gistemp_era_match(station_filename, 
-                      metadata_filename=gr_path + 'GHCNv4_stations.txt'):
+def GHCNv4_ERA5_merger(station_filename, 
+                       metadata_filename=gr_path + 'GHCNv4_stations.txt'):
+    '''
+    Read and prepare given a GHCNv4 time series before merging with the 
+    corresponding ERA5 cell time series. 
     
+    INPUTS:
+        station_filename: file name of GHCNv4 station [string]
+        metadata_filename: file name of GHCNv4 metadata [string]
+    
+    OUTPUTS:
+        merged_ghcnv4_era5: combination of GHCNv4 and ERA5 time series for a
+                            given station [DataFrame]
+        station_ID: ID of selected GHCNv4 station [string]
+        station_name: name of selected GHCNv4 station [string]
+    '''
     # read station data
     station_ID = station_filename.split(os.sep)[-1].split('.')[0]
     station_data = pd.read_csv(station_filename, 
                                na_values=999.9, index_col=0).iloc[:, :12]
     
     station_data = station_data.stack(dropna=False).reset_index()
-    station_data.rename(columns={'level_1': 'MONTH', 0: 'Temperature_C'}, 
+    station_data.rename(columns={'level_1': 'MONTH', 0: 'GHCNv4_temperature'}, 
                         inplace=True)
     
     station_data.index = pd.to_datetime(station_data.YEAR.astype(str) 
@@ -105,26 +137,28 @@ def gistemp_era_match(station_filename,
                                station_spec.Lat.iloc[0])).T
         
     # get ERA5 cell matching station location
-    era_matching_cell, idx = match(station_point, era_points)
-    era_matching_rowcol = era_positions.iloc[idx]
+    era5_matching_cell, idx = data_match(station_point, era5_points)
+    era5_matching_rowcol = era5_positions.iloc[idx]
     
     # target time series at the point of interest
-    era_point_timeseries = np.array(era.t2m[:, 0, int(era_matching_rowcol.row), 
-                                    int(era_matching_rowcol.col)]) - 273.15
+    era5_point_timeseries = np.array(era5.t2m[:, 0, int(era5_matching_rowcol.row), 
+                                     int(era5_matching_rowcol.col)]) - 273.15
     
-    era_point_timeseries_df = pd.DataFrame({'era_temperature': era_point_timeseries}, 
-                                           index=era_time)
+    era5_point_timeseries_df = pd.DataFrame({'ERA5_temperature': era5_point_timeseries}, 
+                                            index=era5_time)
     
-    # merge GISTEMP and ERA data
-    merged_gistemp_era = pd.merge_asof(station_data, era_point_timeseries_df, 
+    # merge GHCNv4 and ERA5 data
+    merged_ghcnv4_era5 = pd.merge_asof(station_data, era5_point_timeseries_df, 
                                        left_index=True, right_index=True)
     
-    return merged_gistemp_era, station_ID, station_name
+    return merged_ghcnv4_era5, station_ID, station_name
 
 
 # %% run for all stations
 
+# options
 visualisation = False
+save = False
 
 station_filenames = glob.glob(dataset_path + '*.csv')
 
@@ -133,17 +167,19 @@ results = {}
 
 for i, sfn in tqdm(enumerate(station_filenames)):
     
-    st_results, st_ID, st_name = gistemp_era_match(station_filename=sfn) 
+    st_results, st_ID, st_name = GHCNv4_ERA5_merger(station_filename=sfn) 
     
     results[st_ID] = st_results 
     
     if visualisation:
         
         plt.figure()
-        plt.plot(st_results.Temperature_C - st_results.era_temperature,
+        plt.plot(st_results.GHCNv4_temperature - st_results.ERA5_temperature,
                  'o-', color='darkorange')
         plt.ylabel('GHCNv4 minus ERA5 temperature (°C)', fontsize=18)
         plt.tick_params(axis='both', which='major', labelsize=16)
         plt.axvline(0, LineStyle='--', color='darkgray')
         plt.title('%s (%s)' %(st_name, st_ID), fontsize=20)
         
+if save:
+    
