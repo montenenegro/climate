@@ -3,13 +3,16 @@
 
 @author: Adrien Wehrlé, GEUS (Geological Survey of Denmark and Greenland)
 
-Match GHCNv4 meteorological station datasets with corresponding ERA5 cells.
+Combine GHCNv4 meteorological station datasets with corresponding 
+ERA5 cells.
 
 """
 
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+from multiprocessing import Pool, freeze_support
+import time
 import xarray as xr
 from scipy.spatial import distance as dist
 from shapely.geometry import Point
@@ -23,21 +26,19 @@ import matplotlib.pyplot as plt
 # %% set required paths
 
 # path to Github repository
-gr_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/'
+gr_path = '/path/to/GHCNv4_ERA5_comparison/'
 
 # path to folder containing GHCNv4 datasets
-dataset_path = 'C:/Users/Pascal/Desktop/GEUS_2019/GISTEMP_analysis/raw_GISTEMP_csv_data/'
+dataset_path = '/path/to/raw_GHCNv4_csv_data/'
 
 # filename of era5 dataset
-era5_ds_filename = "C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal" \
-            + "-1602255451.139694-24165-26-eecb89cc-17e1-4466-b8a2-11" \
-            + "d905ef570a.nc"
+era5_filename = '/path/to/ERA5_dataset.nc'
 
 
 # %% get centroid coordinates of ERA5 cells
 
-# open ERA5 dataset
-era5 = xr.open_dataset(era5_ds_filename)
+# load ERA5 dataset
+era5 = xr.open_dataset(era5_filename)
 
 # convert time to datetime
 era5_time = pd.to_datetime(np.array(era5['time']), 
@@ -70,7 +71,7 @@ era5_gdfpoints = gpd.GeoDataFrame(geometry=gpd.points_from_xy(era5_positions.lon
 
 def data_match(station_point, era5_points):
     '''
-    Find closest ERA5 cell centroid to given GHCNv4 station.
+    Find the closest ERA5 cell centroid to a given GHCNv4 station.
     
     INPUTS:
         station_point: station position in (lon, lat) [array]
@@ -104,7 +105,7 @@ def data_match(station_point, era5_points):
 def GHCNv4_ERA5_merger(station_filename, 
                        metadata_filename=gr_path + 'GHCNv4_stations.txt'):
     '''
-    Read and prepare given a GHCNv4 time series before merging with the 
+    Load and prepare a given GHCNv4 time series before merging with the 
     corresponding ERA5 cell time series. 
     
     INPUTS:
@@ -118,7 +119,7 @@ def GHCNv4_ERA5_merger(station_filename,
         station_name: name of selected GHCNv4 station [string]
     '''
     
-    # read station data
+    # load station data
     station_ID = station_filename.split(os.sep)[-1].split('.')[0]
     station_data = pd.read_csv(station_filename, 
                                na_values=999.9, index_col=0).iloc[:, :12]
@@ -158,37 +159,66 @@ def GHCNv4_ERA5_merger(station_filename,
     return merged_ghcnv4_era5, station_ID, station_name
 
 
-# %% run all stations
+# %% run all stations using multiprocessing
 
-# set visualisation and save
-visualisation = False
-save = False
-
-station_filenames = glob.glob(dataset_path + '*.csv')
+# set visualisation and save 
+visualisation = True
+save = True
 
 # store results in dict to keep initial (varying) GHCNv4 temporal coverage
 results = {}
 
-for i, sfn in tqdm(enumerate(station_filenames)):
+# store station names for possible visualisation
+station_names = []
     
-    st_results, st_ID, st_name = GHCNv4_ERA5_merger(station_filename=sfn) 
+# list all GHCNv4 station files
+station_filenames = glob.glob(dataset_path + '*.csv')
     
-    results[st_ID] = st_results 
+# start multiprocessing tasks
+if __name__ == '__main__':
+
+    freeze_support()
     
-    # plot GHCNv4 and ERA5 temperatures for selected station
+    # number of cores to use for multiprocessing
+    nb_cores = 5
+    
+    # record computation time
+    start_time = time.time()
+    start_local_time = time.ctime(start_time)
+    
+    with Pool(nb_cores) as p:
+        
+        # run merger and store outputs
+        for st_results, st_ID, st_name in p.map(GHCNv4_ERA5_merger, 
+                                                station_filenames):
+            results[st_ID] = st_results 
+            station_names.append(st_name)
+        
+    end_time = time.time()
+    end_local_time = time.ctime(end_time)
+    processing_time = (end_time - start_time) / 60
+    print("--- Processing time: %s minutes ---" % processing_time)
+    print("--- Start time: %s ---" % start_local_time)
+    print("--- End time: %s ---" % end_local_time)
+
+
+    # plot GHCNv4 and ERA5 temperatures for all stations stored in results
     if visualisation:
         
-        plt.figure()
-        plt.plot(st_results.GHCNv4_temperature - st_results.ERA5_temperature,
-                 'o-', color='darkorange')
-        plt.ylabel('GHCNv4 minus ERA5 temperature (°C)', fontsize=18)
-        plt.tick_params(axis='both', which='major', labelsize=16)
-        plt.axvline(0, LineStyle='--', color='darkgray')
-        plt.title('%s (%s)' %(st_name, st_ID), fontsize=20)
-
-# save results
-if save:
-    file_name = dataset_path + 'GHCNv4_ERA5_combination' + '.pkl'
-    f = open(file_name, 'wb')
-    pickle.dump(results, f)
-    f.close()  
+        for i, key in enumerate(results):
+            
+            plt.figure()
+            plt.plot(results[key].GHCNv4_temperature 
+                     - results[key].ERA5_temperature,'o-', color='darkorange')
+            plt.ylabel('GHCNv4 minus ERA5 temperature (°C)', fontsize=18)
+            plt.tick_params(axis='both', which='major', labelsize=16)
+            plt.axvline(0, LineStyle='--', color='darkgray')
+            plt.title('%s (%s)' % (station_names[i], key), fontsize=20)
+    
+    # save results
+    if save:
+        
+        filename = dataset_path + 'GHCNv4_ERA5_combination' + '.pkl'
+        f = open(filename, 'wb')
+        pickle.dump(results, f)
+        f.close()  
