@@ -122,44 +122,36 @@ def linregress_time(A_arr):
 
 
 # %% relation tempeature and mode of climate variability
-start_time = time.time()
-start_local_time = time.ctime(start_time)
+# start_time = time.time()
+# start_local_time = time.ctime(start_time)
 
+# CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, ao_idx_arr)
+# print('AO M')
+# np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_m.npy', 
+#         CCs_AO_mo)
 
-CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, ao_idx_arr)
-print('AO M')
-np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_m.npy', 
-        CCs_AO_mo)
+# print('NAO M')
+# CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, nao_idx_arr)
+# np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_m.npy', 
+#         CCs_NAO_mo)
 
-print('NAO M')
-CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, nao_idx_arr)
-np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_m.npy', 
-        CCs_NAO_mo)
+# print('AO A')
+# CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_1000hpa_annual, 
+#                                 ao_idx_arr_annual)
+# np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_a.npy', 
+#         CCs_AO_an)
 
-print('AO A')
-CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_1000hpa_annual, 
-                                ao_idx_arr_annual)
-np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_a.npy', 
-        CCs_AO_an)
+# print('NAO A')
+# CCs_NAO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
+#                                  nao_idx_arr_annual)
+# np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_a.npy', 
+#         CCs_NAO_an)
 
-print('NAO A')
-CCs_NAO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
-                                 nao_idx_arr_annual)
-np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_a.npy', 
-        CCs_NAO_an)
-
-# print('linreg_idx done')
-
-# ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
-
-# ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_mid_temp)
-
-
-end_time = time.time()
-end_local_time = time.ctime(end_time)
-print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
-print("--- Start time: %s ---" % start_local_time)
-print("--- End time: %s ---" % end_local_time)
+# end_time = time.time()
+# end_local_time = time.ctime(end_time)
+# print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
+# print("--- Start time: %s ---" % start_local_time)
+# print("--- End time: %s ---" % end_local_time)
 
 
 # %% temperature trends
@@ -167,9 +159,11 @@ print("--- End time: %s ---" % end_local_time)
 start_time = time.time()
 start_local_time = time.ctime(start_time)
 
+print('ARCTIC')
 ratios_arc, variations_arc, rvalues_arc = np.apply_along_axis(linregress_time, 
                                                               0, era_arctic_temp)
 
+print('MID LATITUDES')
 ratios_mid, variations_mid, rvalues_mid = np.apply_along_axis(linregress_time, 
                                                               0, era_mid_temp)
 
