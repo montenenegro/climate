@@ -162,10 +162,22 @@ start_local_time = time.ctime(start_time)
 print('ARCTIC')
 ratios_arc, variations_arc, rvalues_arc = np.apply_along_axis(linregress_time, 
                                                               0, era_arctic_temp)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/ratios_arctemp.npy', 
+        ratios_arc)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/vars_arctemp.npy', 
+        variations_arc)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/rvals_arctemp.npy', 
+        rvalues_arc)
 
 print('MID LATITUDES')
 ratios_mid, variations_mid, rvalues_mid = np.apply_along_axis(linregress_time, 
                                                               0, era_mid_temp)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/ratios_midtemp.npy', 
+        ratios_mid)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/vars_midtemp.npy', 
+        variations_mid)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/rvals_midtemp.npy', 
+        rvalues_mid)
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)

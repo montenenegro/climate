@@ -119,28 +119,27 @@ def linregress_time(A_arr):
     
     return ratio, variation, rvalue
 
-
-start_time = time.time()
-start_local_time = time.ctime(start_time)
-    
-# CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
-CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, ao_idx_arr)
-
-end_time = time.time()
-end_local_time = time.ctime(end_time)
-print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
-print("--- Start time: %s ---" % start_local_time)
-print("--- End time: %s ---" % end_local_time)
-
 start_time = time.time()
 start_local_time = time.ctime(start_time)
 
-CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, nao_idx_arr)
 
-CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
+CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, ao_idx_arr)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_m.npy', 
+        CCs_AO_mo)
+
+CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, nao_idx_arr)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_m.npy', 
+        CCs_NAO_mo)
+
+CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_1000hpa_annual, 
                                 ao_idx_arr_annual)
-CCs_NAO_an = np.apply_along_axis(linreg_idx, 0, era_1000hpa_annual, 
-                                 nao_idx_arr_anuual)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_1000hpa_AO_a.npy', 
+        CCs_AO_an)
+
+CCs_NAO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
+                                 nao_idx_arr_annual)
+np.save('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/CC_500hpa_NAO_a.npy', 
+        CCs_NAO_an)
 
 # print('linreg_idx done')
 
@@ -155,49 +154,14 @@ print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
 print("--- Start time: %s ---" % start_local_time)
 print("--- End time: %s ---" % end_local_time)
 
+start_time = time.time()
+start_local_time = time.ctime(start_time)
 
-# set the colormap and centre the colorbar
-class MidpointNormalize(mpl.colors.Normalize):
-    """Normalise the colorbar."""
-    
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
-        self.midpoint = midpoint
-        mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
+ratios_arc, variations_arc, rvalues_arc = np.apply_along_axis(linregress_time, 
+                                                              0, era_arctic_temp)
 
-    def __call__(self, value, clip=None):
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
-        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-    
-
-# plt.subplot(projection="polar")
-plt.figure()
-plt.imshow(CCs, vmin=np.nanmin(CCs), vmax=np.nanmax(CCs), 
-           norm=MidpointNormalize(np.nanmin(CCs), np.nanmax(CCs), 0.),
-           cmap='bwr', aspect='auto')
-plt.title('Correlation ERAtemp NAO', fontsize=20)
-plt.colorbar()
-
-plt.figure()
-plt.imshow(ratios, vmin=np.nanmin(ratios), vmax=np.nanmax(ratios), 
-           norm=MidpointNormalize(np.nanmin(ratios), np.nanmax(ratios), 0.),
-           cmap='bwr', aspect='auto')
-plt.title('Ratio temperature variations/residuals', fontsize=20)
-plt.colorbar()
-
-plt.figure()
-plt.imshow(rvalues, vmin=np.nanmin(rvalues), vmax=np.nanmax(rvalues), 
-           norm=MidpointNormalize(np.nanmin(rvalues), np.nanmax(rvalues), 0.),
-           cmap='bwr', aspect='auto')
-plt.title('ERAtemp Correlation coefficient with time', fontsize=20)
-plt.colorbar()
-
-plt.figure()
-plt.imshow(variations, vmin=np.nanmin(variations), vmax=np.nanmax(variations), 
-           norm=MidpointNormalize(np.nanmin(variations), np.nanmax(variations), 0.),
-           cmap='bwr', aspect='auto')
-plt.title('ERAtemp linregress difference', fontsize=20)
-plt.colorbar()
-
+ratios_mid, variations_mid, rvalues_mid = np.apply_along_axis(linregress_time, 
+                                                              0, era_mid_temp)
 
 # %% correlation per month
 
