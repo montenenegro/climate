@@ -60,6 +60,12 @@ era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
 
 era_time = pd.to_datetime(np.array(era_arctic['time']), format='%Y-%*-%dT00:00:00.000000000')
 
+# above 0°N, starting 1979-01-01
+era_mid = xr.open_dataset('H:/adaptor.mars.internal-1606980597.3064492'
+                          +'-12533-24-1d6992aa-c6df-4c7b-9d19-a3a93d5bc367.nc')
+
+era_mid_temp = np.array(era_mid.t2m[:, era_mid.latitude<20, :])
+
 
 def annual_resampling(A_arr):
     
@@ -120,6 +126,8 @@ CCs = np.apply_along_axis(linreg_idx, 0, era_500hpa)
 # print('linreg_idx done')
 
 ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
+
+# ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_mid_temp)
 
 
 end_time = time.time()
