@@ -17,7 +17,7 @@ from tqdm import tqdm
 from matplotlib import gridspec
 import multiprocessing
 import mpl_toolkits
-from mpl_toolkits.basemap import Basemap
+# from mpl_toolkits.basemap import Basemap
 
 #  https://www.ncdc.noaa.gov/teleconnections/ao/
 #  https://cds.climate.copernicus.eu/
@@ -30,6 +30,13 @@ ao_idx['Time'] = pd.to_datetime(ao_idx.Date, format='%Y%m')
 
 ao_idx = ao_idx[348:]
 
+ao_idx_arr = np.array(ao_idx.Value)
+
+ao_idx.index = ao_idx.Time
+ao_idx.drop(columns=['Date', 'Time'], inplace=True)
+ao_idx_annual = ao_idx.resample('1Y').mean()
+ao_idx_arr_annual = np.array(ao_idx_annual.Value)
+
 nao_idx = pd.read_csv('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
                       + 'NAO_index_monthly_tab.txt', sep='  ', header=None)
 
@@ -37,6 +44,10 @@ nao_idx_arr = nao_idx.iloc[:, 1:].values.flatten()
 
 nao_idx_arr = nao_idx_arr[348:-3]
 
+nao_idx_df = pd.DataFrame(nao_idx_arr)
+nao_idx_df.index = ao_idx.index
+nao_idx_annual = nao_idx_df.resample('1Y').mean()
+nao_idx_arr_annual = np.array(nao_idx_annual.iloc[:,0])
 
 # above 66.5°N, starting 1979-01-01
 era_arctic = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.mars.internal"
@@ -54,7 +65,6 @@ era_1000hpa_file = xr.open_dataset("C:/Users/Pascal/Desktop/UGAM2/CIA/adaptor.ma
                                    + "-1606980517.300832-6782-15-5386caa7-724d-4db7-9349"
                                    + "-4d72949f9cee.nc")
 era_1000hpa = era_1000hpa_file.z_0001[:-1, :, :]
-
 
 era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
 
@@ -77,22 +87,23 @@ def annual_resampling(A_arr):
     return A_AR
     
 
-# start_time = time.time()
-# start_local_time = time.ctime(start_time)
+start_time = time.time()
+start_local_time = time.ctime(start_time)
     
-# annual_era_var = np.apply_along_axis(annual_resampling, 0, era_arctic_temp)
+era_500hpa_annual = np.apply_along_axis(annual_resampling, 0, era_500hpa)
+era_1000hpa_annual = np.apply_along_axis(annual_resampling, 0, era_1000hpa)
 
-# end_time = time.time()
-# end_local_time = time.ctime(end_time)
-# print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
-# print("--- Start time: %s ---" % start_local_time)
-# print("--- End time: %s ---" % end_local_time)
+end_time = time.time()
+end_local_time = time.ctime(end_time)
+print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
+print("--- Start time: %s ---" % start_local_time)
+print("--- End time: %s ---" % end_local_time)
 
 
-def linreg_idx(A_arr):
+def linreg_idx(A_arr, cm):
     
-    mask = [(~np.isnan(A_arr)) & (~np.isnan(nao_idx_arr))]
-    results = linregress(A_arr[mask], nao_idx_arr[mask])
+    mask = [(~np.isnan(A_arr)) & (~np.isnan(cm))]
+    results = linregress(A_arr[mask], cm[mask])
     corrcoeff = results.rvalue
     
     return corrcoeff
@@ -121,11 +132,17 @@ start_time = time.time()
 start_local_time = time.ctime(start_time)
     
 # CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
-CCs = np.apply_along_axis(linreg_idx, 0, era_500hpa)
+CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, ao_idx_arr)
+CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, nao_idx_arr)
+
+CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
+                                ao_idx_arr_annual)
+CCs_NAO_an = np.apply_along_axis(linreg_idx, 0, era_1000hpa_annual, 
+                                 nao_idx_arr_anuual)
 
 # print('linreg_idx done')
 
-ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
+# ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_arctic_temp)
 
 # ratios, variations, rvalues = np.apply_along_axis(linregress_time, 0, era_mid_temp)
 
