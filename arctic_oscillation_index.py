@@ -71,27 +71,19 @@ era_arctic_temp = np.array(era_arctic.t2m[:, 0, :, :])
 era_time = pd.to_datetime(np.array(era_arctic['time']), format='%Y-%*-%dT00:00:00.000000000')
 
 # above 0°N, starting 1979-01-01
-era_mid = xr.open_dataset('H:/adaptor.mars.internal-1606980597.3064492'
-                          +'-12533-24-1d6992aa-c6df-4c7b-9d19-a3a93d5bc367.nc')
+era_mid = xr.open_dataset('H:/adaptor.mars.internal-1607766295.7032957-886-22'
+                          +'-0fc4ca2c-a399-4fbe-8133-1e259b447826.nc')
 
-era_mid_temp = np.array(era_mid.t2m[:, era_mid.latitude<20, :])
+# lat_mask = (era_mid.latitude > 20) & (era_mid.latitude < 66.5)
 
-
-def annual_resampling(A_arr):
-    
-    A_df = pd.DataFrame(A_arr)
-    A_df.index = era_time
-    
-    A_AR = A_df.resample('1Y').mean()
-    
-    return A_AR
+era_mid_temp = np.array(era_mid.t2m[:, 0, :, :])
     
 
 start_time = time.time()
 start_local_time = time.ctime(start_time)
     
-era_500hpa_annual = np.apply_along_axis(annual_resampling, 0, era_500hpa)
-era_1000hpa_annual = np.apply_along_axis(annual_resampling, 0, era_1000hpa)
+era_500hpa_annual = era_500hpa_file.z_0001[:-1, :, :].resample(time='1Y').mean()
+era_1000hpa_annual = era_1000hpa_file.z_0001[:-1, :, :].resample(time='1Y').mean()
 
 end_time = time.time()
 end_local_time = time.ctime(end_time)
@@ -133,6 +125,16 @@ start_local_time = time.ctime(start_time)
     
 # CCs = np.apply_along_axis(linreg_idx, 0, era_arctic_temp)
 CCs_AO_mo = np.apply_along_axis(linreg_idx, 0, era_500hpa, ao_idx_arr)
+
+end_time = time.time()
+end_local_time = time.ctime(end_time)
+print("--- Processing time: %.2f minutes ---" % ((end_time - start_time) / 60))
+print("--- Start time: %s ---" % start_local_time)
+print("--- End time: %s ---" % end_local_time)
+
+start_time = time.time()
+start_local_time = time.ctime(start_time)
+
 CCs_NAO_mo = np.apply_along_axis(linreg_idx, 0, era_1000hpa, nao_idx_arr)
 
 CCs_AO_an = np.apply_along_axis(linreg_idx, 0, era_500hpa_annual, 
@@ -320,4 +322,3 @@ def visualisation(variable, file, lims=False, step=0.1):
 visualisation(ratios, era_arctic, lims=[-0.1, 3])
 visualisation(rvalues, era_arctic, lims=[-0.05, 0.3], step=0.001)
 visualisation(CCs, era_500hpa_file, step=0.01)
-
