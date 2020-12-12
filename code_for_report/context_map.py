@@ -31,7 +31,7 @@ ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=.5)
 # ax.gridlines()
 ax.set_global()
 
-ax.set_extent([-180, 180, 64.4, 90], ccrs.PlateCarree())
+ax.set_extent([-180, 180, 64.1, 90], ccrs.PlateCarree())
 
 station_filenames = glob.glob('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
                               + 'raw_GISTEMP_csv_data/*.csv')
@@ -73,13 +73,17 @@ ax2 = plt.subplot(111, projection=ccrs.NorthPolarStereo())
 gl2 = ax2.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
                   linewidth=1, color='gray', alpha=0.3, linestyle='-', zorder=10)
 # gl2.xlabels_top = False
-# gl2.ylabels_left = False
+gl2.ylabels_left = True
 # gl2.xlines = False
-gl2.xlocator = mticker.FixedLocator(np.arange(-180, 180+60, 60))
+gl2.xlocator = mticker.FixedLocator(np.arange(-180, 180, 60))
 gl2.ylocator = mticker.FixedLocator(np.arange(55, 85+5, 5))
 gl2.xformatter = LONGITUDE_FORMATTER
 gl2.yformatter = LATITUDE_FORMATTER
 gl2.xlabel_style = {'size': 15, 'color': 'gray'}
 gl2.xlabel_style = {'color': 'black'}  # 'weight': 'bold'}
+gl2.xlabel_style = {'zorder': 12}
+
+plt.savefig('C:/Users/Pascal/Desktop/UGAM2/CIA/climatic-modes-arctic/'
+            + 'code_for_report/context_v1.pdf', bbox_inches='tight')
 
     
